@@ -47,7 +47,5 @@ jobs:
           # Mapeia os Secrets do GitHub para variáveis de ambiente
           # que o seu script Python poderá ler.
           REMETENTE: ${{ secrets.EMAIL_REMETENTE }}
-          SENHA_APP: ${{ secrets.SENHA_APP }}
-          DESTINATARIO: ${{ secrets.EMAIL_DESTINATARIO }}
-
-
+          SENHA_APP: ${{ secrets.SENHA_REMETENTE }}
+          DESTINATARIO: ${{ secrets.LISTA_DESTINATARIOS }}
