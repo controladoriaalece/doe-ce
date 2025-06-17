@@ -9,13 +9,9 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 
 # --- CONFIGURAÇÕES (PREENCHA AQUI) ---
-EMAIL_REMETENTE = "controladoriaalece@gmail.com"
-SENHA_REMETENTE = "fwovhxqbwgyorkwo"
-LISTA_DESTINATARIOS = [
-    "edipohpo@hotmail.com", 
-    "edipo.henrique@al.ce.gov.br", 
-    "edipohpo87@gmail.com"
-]
+EMAIL_REMETENTE = os.getenv("REMETENTE")
+SENHA_REMETENTE = os.getenv("SENHA_APP")
+LISTA_DESTINATARIOS = os.getenv("DESTINATARIO")
 PASTA_DOWNLOAD = "diarios_pdf"
 # --- FIM DAS CONFIGURAÇÕES ---
 
