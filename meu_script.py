@@ -33,7 +33,6 @@ PASTA_DOWNLOAD = "diarios_pdf"
 FRASE_BUSCA = "Assembleia Legislativa do Estado do Ceará"
 TAMANHO_MINIMO_KB = 10
 SEPARADOR_PUBLICACAO = "*** *** ***"
-CABECALHO_SECAO = "PODER LEGISLATIVO"
 # --- FIM DA CONFIGURAÇÃO DA BUSCA ---
 
 
@@ -97,9 +96,12 @@ def _recortar_publicacao_final(texto_publicacao):
     
     return texto_publicacao
 
+# --- FUNÇÃO DE PESQUISA SIMPLIFICADA (BUSCA EM TODO O DOCUMENTO) ---
 def pesquisar_nos_pdfs(lista_de_arquivos, frase, separador):
-    """Pesquisa a frase nos PDFs, extrai as publicações e recorta a última, se necessário."""
-    print(f"--- Iniciando busca por: '{frase}' ---", flush=True)
+    """
+    Pesquisa a frase em TODO o conteúdo dos PDFs, extrai as publicações e recorta a última, se necessário.
+    """
+    print(f"--- Iniciando busca por: '{frase}' em TODO o conteúdo dos arquivos ---", flush=True)
     resultados = {}
     frase_lower = frase.lower()
 
@@ -109,28 +111,28 @@ def pesquisar_nos_pdfs(lista_de_arquivos, frase, separador):
             texto_completo_pdf = ""
             with open(caminho_arquivo, 'rb') as f:
                 reader = pypdf.PdfReader(f)
+                if reader.is_encrypted:
+                    reader.decrypt('')
                 for page in reader.pages:
-                    texto_completo_pdf += page.extract_text() or ""
+                    texto_extraido = page.extract_text()
+                    if texto_extraido:
+                        texto_completo_pdf += texto_extraido + "\n"
             
-            inicio_secao_idx = texto_completo_pdf.find(CABECALHO_SECAO)
+            # A lógica de busca agora é aplicada diretamente ao texto completo
+            publicacoes_brutas = texto_completo_pdf.split(separador)
+            
+            # Filtra apenas as publicações que contêm a frase de busca
+            publicacoes_relevantes = [
+                pub.strip() for pub in publicacoes_brutas if frase_lower in pub.lower()
+            ]
 
-            if inicio_secao_idx != -1:
-                print(f"Seção '{CABECALHO_SECAO}' encontrada no arquivo '{nome_arquivo}'.", flush=True)
-                texto_da_secao = texto_completo_pdf[inicio_secao_idx:]
-                publicacoes_brutas = texto_da_secao.split(separador)
+            if publicacoes_relevantes:
+                # A lógica de recortar a última publicação (se aplicável) continua funcionando
+                ultima_publicacao = publicacoes_relevantes[-1]
+                publicacoes_relevantes[-1] = _recortar_publicacao_final(ultima_publicacao)
                 
-                publicacoes_relevantes = [
-                    pub.strip() for pub in publicacoes_brutas if frase_lower in pub.lower()
-                ]
-
-                if publicacoes_relevantes:
-                    ultima_publicacao = publicacoes_relevantes[-1]
-                    publicacoes_relevantes[-1] = _recortar_publicacao_final(ultima_publicacao)
-                    
-                    print(f"Encontradas {len(publicacoes_relevantes)} publicações relevantes em '{nome_arquivo}'", flush=True)
-                    resultados[nome_arquivo] = publicacoes_relevantes
-            else:
-                print(f"Seção '{CABECALHO_SECAO}' NÃO encontrada em '{nome_arquivo}'. Arquivo ignorado.", flush=True)
+                print(f"Encontradas {len(publicacoes_relevantes)} publicações relevantes em '{nome_arquivo}'", flush=True)
+                resultados[nome_arquivo] = publicacoes_relevantes
 
         except Exception as e:
             print(f"ERRO ao ler o arquivo PDF '{caminho_arquivo}': {e}", flush=True)
