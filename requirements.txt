@@ -1,0 +1,6 @@
+os
+requests
+smtplib
+datetime
+pypdf
+re
