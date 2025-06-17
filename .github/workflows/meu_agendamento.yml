@@ -43,3 +43,11 @@ jobs:
       # Use o nome do seu arquivo de script aqui.
       - name: Rodar o script
         run: python meu_script.py
+        env:
+          # Mapeia os Secrets do GitHub para variáveis de ambiente
+          # que o seu script Python poderá ler.
+          REMETENTE: ${{ secrets.EMAIL_REMETENTE }}
+          SENHA_APP: ${{ secrets.SENHA_APP }}
+          DESTINATARIO: ${{ secrets.EMAIL_DESTINATARIO }}
+
+
