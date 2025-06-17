@@ -6,7 +6,7 @@ on:
   schedule:
     # A sintaxe 'cron' define a frequência da execução.
     # Este exemplo roda "às 09:00 UTC todos os dias".
-    - cron: '0 23 * * *'
+    - cron: '*/5 * * * *'
   
   # A linha abaixo permite que você rode o workflow manualmente pela aba Actions.
   # É muito útil para testar!
