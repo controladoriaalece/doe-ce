@@ -96,12 +96,13 @@ def _recortar_publicacao_final(texto_publicacao):
     
     return texto_publicacao
 
-# --- FUNÇÃO DE PESQUISA SIMPLIFICADA (BUSCA EM TODO O DOCUMENTO) ---
+# --- FUNÇÃO DE PESQUISA COM IDENTIFICAÇÃO DE SEÇÃO ---
 def pesquisar_nos_pdfs(lista_de_arquivos, frase, separador):
     """
-    Pesquisa a frase em TODO o conteúdo dos PDFs, extrai as publicações e recorta a última, se necessário.
+    Pesquisa a frase em todo o conteúdo, identifica se a publicação está dentro ou fora
+    da seção principal, e retorna os resultados com essa informação.
     """
-    print(f"--- Iniciando busca por: '{frase}' em TODO o conteúdo dos arquivos ---", flush=True)
+    print(f"--- Iniciando busca inteligente por: '{frase}' ---", flush=True)
     resultados = {}
     frase_lower = frase.lower()
 
@@ -111,28 +112,42 @@ def pesquisar_nos_pdfs(lista_de_arquivos, frase, separador):
             texto_completo_pdf = ""
             with open(caminho_arquivo, 'rb') as f:
                 reader = pypdf.PdfReader(f)
-                if reader.is_encrypted:
-                    reader.decrypt('')
+                if reader.is_encrypted: reader.decrypt('')
                 for page in reader.pages:
                     texto_extraido = page.extract_text()
                     if texto_extraido:
                         texto_completo_pdf += texto_extraido + "\n"
-            
-            # A lógica de busca agora é aplicada diretamente ao texto completo
-            publicacoes_brutas = texto_completo_pdf.split(separador)
-            
-            # Filtra apenas as publicações que contêm a frase de busca
-            publicacoes_relevantes = [
-                pub.strip() for pub in publicacoes_brutas if frase_lower in pub.lower()
-            ]
 
-            if publicacoes_relevantes:
-                # A lógica de recortar a última publicação (se aplicável) continua funcionando
-                ultima_publicacao = publicacoes_relevantes[-1]
-                publicacoes_relevantes[-1] = _recortar_publicacao_final(ultima_publicacao)
+            publicacoes_brutas = texto_completo_pdf.split(separador)
+            publicacoes_encontradas = []
+            
+            # Encontra a posição do cabeçalho para saber o que é "dentro" e o que é "fora"
+            inicio_secao_idx = texto_completo_pdf.find(CABECALHO_SECAO)
+
+            for pub_texto in publicacoes_brutas:
+                if frase_lower in pub_texto.lower():
+                    # Encontra a posição da publicação atual no texto completo
+                    posicao_pub = texto_completo_pdf.find(pub_texto)
+                    
+                    localizacao = "Em Outras Seções" # Padrão
+                    if inicio_secao_idx != -1 and posicao_pub >= inicio_secao_idx:
+                        localizacao = "Na Seção do Poder Legislativo"
+
+                    # Adiciona um dicionário com o texto e a localização
+                    publicacoes_encontradas.append({
+                        "texto": pub_texto.strip(),
+                        "local": localizacao
+                    })
+
+            if publicacoes_encontradas:
+                # A lógica de recortar a última publicação pode ser removida ou ajustada
+                # se não for mais necessária com esta nova abordagem.
+                # Por enquanto, vamos mantê-la para a última publicação encontrada.
+                ultimo_dict = publicacoes_encontradas[-1]
+                ultimo_dict["texto"] = _recortar_publicacao_final(ultimo_dict["texto"])
                 
-                print(f"Encontradas {len(publicacoes_relevantes)} publicações relevantes em '{nome_arquivo}'", flush=True)
-                resultados[nome_arquivo] = publicacoes_relevantes
+                print(f"Encontradas {len(publicacoes_encontradas)} publicações relevantes em '{nome_arquivo}'", flush=True)
+                resultados[nome_arquivo] = publicacoes_encontradas
 
         except Exception as e:
             print(f"ERRO ao ler o arquivo PDF '{caminho_arquivo}': {e}", flush=True)
@@ -142,32 +157,58 @@ def pesquisar_nos_pdfs(lista_de_arquivos, frase, separador):
 
 
 def enviar_email(data_formatada, arquivos_anexos, resultados_busca):
-    # Nenhuma alteração necessária aqui, pois a variável LISTA_DESTINATARIOS já é uma lista!
-    print(f"--- Preparando e-mail para {len(LISTA_DESTINATARIOS)} destinatário(s) em Cópia Oculta (Bcc) ---", flush=True)
-    
-    # Adicionando uma verificação para não tentar enviar e-mail sem destinatários
-    if not LISTA_DESTINATARIOS:
-        print("AVISO: Lista de destinatários está vazia. O e-mail não será enviado.", flush=True)
-        return
-
+    """Envia um e-mail formatado com HTML, organizando os resultados por seção."""
+    print(f"--- 📧 Preparando e-mail com os resultados de {data_formatada} ---", flush=True)
     msg = MIMEMultipart()
     msg['From'] = EMAIL_REMETENTE
-    msg['To'] = EMAIL_REMETENTE # Boa prática para envios em cópia oculta (Bcc)
-    msg['Subject'] = f"📰 Publicações com o termo '{FRASE_BUSCA}' no DOE-CE de {data_formatada} 📅"
+    msg['To'] = ", ".join(LISTA_DESTINATARIOS) # Usando a lista para o campo "Para"
+    msg['Subject'] = f"📰 Publicações da Assembleia Legislativa no Diário Oficial de {data_formatada}"
     
-    corpo_email = f"🤖 Olá! \n\nEncontrei as seguintes publicações com o termo '{FRASE_BUSCA}' no Diário Oficial do Estado do Ceará de {data_formatada} 📅.\n\n"
-    corpo_email += "================== 📄 PUBLICAÇÕES ENCONTRADAS 📄 ==================\n\n"
+    # --- CONSTRUÇÃO DO CORPO DO E-MAIL EM HTML ---
+    corpo_email = f"""
+    <html>
+      <head></head>
+      <body>
+        <p>Olá! 👋</p>
+        <p>Seu robô 🤖 <b>encontrou as seguintes publicações</b> com o termo <i>'{FRASE_BUSCA}'</i> no Diário Oficial de <b>{data_formatada}</b>.</p>
+        <hr>
+    """
+    
     for nome_arquivo, publicacoes in resultados_busca.items():
-        corpo_email += f"DO ARQUIVO: {nome_arquivo}\n--------------------------------------------------\n\n"
-        for i, pub_texto in enumerate(publicacoes):
-            corpo_email += f"PUBLICAÇÃO {i+1}:\n\n{pub_texto}\n\n--------------------------------------------------\n\n"
-        corpo_email += "\n"
-    corpo_email += f"O(s) arquivo(s) completo(s) do Diário Oficial de {data_formatada} está(ão) em anexo para consulta.\n💡 Caso sinta falta de alguma publicação, por gentileza me comunique em resposta a este e-mail para a melhoria contínua da minha atuação.🦾\n\nAtenciosamente,\n🤖Robô de notificações do DOE-CE📄"
+        corpo_email += f"<h2>DO ARQUIVO: <b>{nome_arquivo}</b></h2>"
+        
+        # Separa as publicações por localização
+        pubs_na_secao = [p for p in publicacoes if p['local'] == "Na Seção do Poder Legislativo"]
+        pubs_fora_secao = [p for p in publicacoes if p['local'] == "Em Outras Seções"]
+
+        if pubs_na_secao:
+            corpo_email += "<h3>Na Seção do Poder Legislativo:</h3>"
+            for i, pub_dict in enumerate(pubs_na_secao):
+                corpo_email += f"<p><b>PUBLICAÇÃO {i+1}:</b></p>"
+                corpo_email += f"<pre style='white-space: pre-wrap; word-wrap: break-word; background-color: #f4f4f4; padding: 10px; border-radius: 5px;'>{pub_dict['texto']}</pre>"
+        
+        if pubs_fora_secao:
+            corpo_email += "<h3>Em Outras Seções:</h3>"
+            for i, pub_dict in enumerate(pubs_fora_secao):
+                corpo_email += f"<p><b>PUBLICAÇÃO {i+1}:</b></p>"
+                corpo_email += f"<pre style='white-space: pre-wrap; word-wrap: break-word; background-color: #f0f8ff; padding: 10px; border-radius: 5px;'>{pub_dict['texto']}</pre>"
+
+        corpo_email += "<br>"
+
+    corpo_email += f"""
+        <hr>
+        <p>As páginas do Diário Oficial contendo estas publicações estão em anexo para consulta. ✅</p>
+        <p>Atenciosamente,<br><b>Seu Robô 🤖</b></p>
+      </body>
+    </html>
+    """
     
-    msg.attach(MIMEText(corpo_email, 'plain', 'utf-8'))
+    msg.attach(MIMEText(corpo_email, 'html', 'utf-8'))
     
+    # Lógica de anexos continua a mesma, anexando apenas os arquivos relevantes
     for caminho_arquivo in arquivos_anexos:
-        with open(caminho_arquivo, "rb") as f: anexo = MIMEApplication(f.read(), _subtype="pdf")
+        with open(caminho_arquivo, "rb") as f:
+            anexo = MIMEApplication(f.read(), _subtype="pdf")
         nome_arquivo = os.path.basename(caminho_arquivo)
         anexo.add_header('Content-Disposition', 'attachment', filename=nome_arquivo)
         msg.attach(anexo)
@@ -178,7 +219,7 @@ def enviar_email(data_formatada, arquivos_anexos, resultados_busca):
         server.login(EMAIL_REMETENTE, SENHA_REMETENTE)
         server.sendmail(EMAIL_REMETENTE, LISTA_DESTINATARIOS, msg.as_string())
         server.quit()
-        print(f"E-mail enviado com sucesso em cópia oculta para: {', '.join(LISTA_DESTINATARIOS)}", flush=True)
+        print(f"E-mail enviado com sucesso!", flush=True)
     except Exception as e:
         print(f"ERRO CRÍTICO ao enviar o e-mail: {e}", flush=True)
 
