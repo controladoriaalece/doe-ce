@@ -153,7 +153,7 @@ def enviar_email(data_formatada, arquivos_anexos, resultados_busca):
     msg = MIMEMultipart()
     msg['From'] = EMAIL_REMETENTE
     msg['To'] = EMAIL_REMETENTE # Boa prática para envios em cópia oculta (Bcc)
-    msg['Subject'] = f"📰 Publicações com o termo '{FRASE_BUSCA}' no DOE-CE de {data_formatada} 📅"
+    msg['Subject'] = f"📰 DOE-CE de {data_formatada} - Publicações com o termo '{FRASE_BUSCA}' 🔍"
     
     corpo_email = f"🤖 Olá! \n\nEncontrei as seguintes publicações com o termo '{FRASE_BUSCA}' no Diário Oficial do Estado do Ceará de {data_formatada} 📅.\n\n"
     corpo_email += "================== 📄 PUBLICAÇÕES ENCONTRADAS 📄 ==================\n\n"
@@ -162,7 +162,7 @@ def enviar_email(data_formatada, arquivos_anexos, resultados_busca):
         for i, pub_texto in enumerate(publicacoes):
             corpo_email += f"PUBLICAÇÃO {i+1}:\n\n{pub_texto}\n\n--------------------------------------------------\n\n"
         corpo_email += "\n"
-    corpo_email += f"O(s) arquivo(s) completo(s) do Diário Oficial de {data_formatada} está(ão) em anexo para consulta.\n💡 Caso sinta falta de alguma publicação, por gentileza me comunique em resposta a este e-mail para a melhoria contínua da minha atuação.🦾\n\nAtenciosamente,\n🤖Robô de notificações do DOE-CE📄"
+    corpo_email += f"O(s) arquivo(s) completo(s) do Diário Oficial de {data_formatada} está(ão) em anexo para consulta.\n💡 Caso sinta falta de alguma publicação, por gentileza me comunique em resposta a este e-mail para a melhoria contínua da minha atuação. 🦾\n\nAtenciosamente,\n\n🤖 Robô de notificações do DOE-CE 📄"
     
     msg.attach(MIMEText(corpo_email, 'plain', 'utf-8'))
     
