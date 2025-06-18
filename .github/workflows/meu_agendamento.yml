@@ -6,7 +6,7 @@ on:
   schedule:
     # A sintaxe 'cron' define a frequência da execução.
     # Roda a cada 5 minutos.
-    - cron: '* */4 * * *'
+    - cron: '* 23 * * *'
   
   # A linha abaixo permite que você rode o workflow manualmente pela aba Actions.
   # É muito útil para testar!
