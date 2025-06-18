@@ -162,7 +162,7 @@ def enviar_email(data_formatada, arquivos_anexos, resultados_busca):
         for i, pub_texto in enumerate(publicacoes):
             corpo_email += f"PUBLICAÇÃO {i+1}:\n\n{pub_texto}\n\n--------------------------------------------------\n\n"
         corpo_email += "\n"
-    corpo_email += f"O(s) arquivo(s) completo(s) do Diário Oficial de {data_formatada} está(ão) em anexo para consulta.\n💡 Caso sinta falta de alguma publicação, por gentileza me comunique em resposta a este e-mail para a melhoria contínua da minha atuação. 🦾\n\nAtenciosamente,\n\n🤖 Robô de notificações do DOE-CE 📄"
+    corpo_email += f"O(s) arquivo(s) completo(s) do Diário Oficial de {data_formatada} está(ão) em anexo para consulta.\n💡 Caso sinta falta de alguma publicação, por gentileza me comunique em resposta a este e-mail para a melhoria contínua da minha atuação. 🦾\n\nAtenciosamente,\n\n🤖 Robô extraoficial de notificações do DOE-CE 📄"
     
     msg.attach(MIMEText(corpo_email, 'plain', 'utf-8'))
     
