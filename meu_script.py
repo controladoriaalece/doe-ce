@@ -151,7 +151,7 @@ def enviar_email(data_formatada, arquivos_anexos, resultados_busca):
         return
 
     msg = MIMEMultipart()
-    msg['From'] = EMAIL_REMETENTE
+    msg['From'] = f"Robô DOTCE-CE <{EMAIL_REMETENTE}>"
     msg['To'] = EMAIL_REMETENTE # Boa prática para envios em cópia oculta (Bcc)
     msg['Subject'] = f"📰🟠 DOE-CE de {data_formatada} - Publicações com o termo '{FRASE_BUSCA}' 🔍"
     
